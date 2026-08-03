@@ -150,20 +150,28 @@
     if (CONFIG.debug) console.log("[eb-exit] triggering popup");
     injectStyles();
     buildPopup();
-    document.removeEventListener("mouseleave", onMouseLeave);
+    document.removeEventListener("mouseout", onMouseOut);
   }
 
-  function onMouseLeave(e) {
-    // Fires when the cursor leaves the document entirely. Checking
-    // clientY narrows it to leaving from the TOP (toward the address
-    // bar / tabs) rather than the sides or bottom of the window.
+  function onMouseOut(e) {
+    // Safari (and Chrome, on a slow-moving pointer) doesn't reliably fire
+    // mouseleave on `document` when the cursor exits toward the browser
+    // chrome. Using mouseout + a null relatedTarget/toElement is the
+    // cross-browser-safe way to detect "the pointer left the viewport",
+    // combined with clientY to narrow it to leaving from the TOP.
+    var leftViewport = !e.relatedTarget && !e.toElement;
     if (CONFIG.debug) {
-      console.log("[eb-exit] document mouseleave", { clientY: e.clientY, armed: armed, shown: shown });
+      console.log("[eb-exit] document mouseout", {
+        clientY: e.clientY,
+        leftViewport: leftViewport,
+        armed: armed,
+        shown: shown
+      });
     }
-    if (e.clientY <= CONFIG.triggerY) {
+    if (leftViewport && e.clientY <= CONFIG.triggerY) {
       trigger();
     }
   }
 
-  document.addEventListener("mouseleave", onMouseLeave);
+  document.addEventListener("mouseout", onMouseOut);
 })();
