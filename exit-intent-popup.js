@@ -79,7 +79,7 @@
         },
         {
           name: "Is Now a Good Time to Switch?",
-          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/market_analysis/energy-type",
+          href: "https://www.energybot.com/should-i-switch.html",
           icon: ICONS.helpCircle
         },
         {
@@ -106,7 +106,7 @@
       tools: [
         {
           name: "Is Now a Good Time to Switch?",
-          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/market_analysis/energy-type",
+          href: "https://www.energybot.com/should-i-switch.html",
           icon: ICONS.helpCircle
         }
       ]
