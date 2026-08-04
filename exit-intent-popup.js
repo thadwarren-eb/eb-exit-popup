@@ -25,26 +25,33 @@
     // Only fire when cursor moves above this Y position (px from top)
     triggerY: 20,
     cookieName: "eb_exit_popup_seen",
-    headline: "Before you go \u2014 don't miss these free tools",
+    headline: "Before you go — don't miss these free tools",
     subhead: "Takes 30 seconds. No account needed.",
     tools: [
       {
         name: "Rate Tracker",
-        desc: "Get alerted the moment a better rate opens up in your area.",
-        href: "https://www.energybot.com/rate-tracker",
-        cta: "Track My Rate"
+        href: "https://www.energybot.com/dashboard.html#/dashboard/tools/price_tracker/energy-type",
+        icon:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7">' +
+          '</polyline><polyline points="14 7 21 7 21 14"></polyline></svg>'
       },
       {
         name: "Is Now a Good Time to Switch?",
-        desc: "Answer a couple quick questions to see if switching makes sense today.",
-        href: "https://www.energybot.com/should-i-switch",
-        cta: "Check Now"
+        href: "https://www.energybot.com/dashboard.html#/dashboard/tools/market_analysis/energy-type",
+        icon:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle>' +
+          '<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17">' +
+          '</line></svg>'
       },
       {
         name: "Compare My Bill to My Neighbors",
-        desc: "See how your rate stacks up against others in your zip code.",
-        href: "https://www.energybot.com/compare-my-bill",
-        cta: "Compare My Bill"
+        href: "https://www.energybot.com/dashboard.html#/dashboard/tools/bill_comparison/energy-type",
+        icon:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line>' +
+          '<line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>'
       }
     ]
   };
@@ -82,9 +89,8 @@
       .map(function (t) {
         return (
           '<a class="eb-exit-tool" href="' + t.href + '" target="_blank" rel="noopener">' +
-            '<div class="eb-exit-tool-name">' + t.name + "</div>" +
-            '<div class="eb-exit-tool-desc">' + t.desc + "</div>" +
-            '<span class="eb-exit-tool-cta">' + t.cta + " \u2192</span>" +
+            '<span class="eb-exit-tool-icon">' + t.icon + "</span>" +
+            '<span class="eb-exit-tool-name">' + t.name + "</span>" +
           "</a>"
         );
       })
@@ -117,28 +123,53 @@
     });
   }
 
+  function injectFont() {
+    if (document.getElementById("eb-exit-font")) return;
+    var link = document.createElement("link");
+    link.id = "eb-exit-font";
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+  }
+
   function injectStyles() {
     var css =
-      "#eb-exit-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);" +
+      // EnergyBot design tokens (from Figma design system)
+      ":root{" +
+        "--eb-blue:#4353FF;--eb-blue-hover:#3C48CD;--eb-blue-20:#D1D5F7;" +
+        "--eb-blue-10:#E3E4F6;--eb-blue-5:#F6F6FF;" +
+        "--eb-black:#222222;--eb-black-50:#909090;--eb-black-20:#D3D3D3;" +
+        "--eb-black-12:#E4E4E4;--eb-black-5:#F4F4F4;" +
+        "--eb-cyan:#00B5CD;" +
+      "}" +
+      "#eb-exit-overlay{position:fixed;inset:0;background:rgba(34,34,34,.6);" +
       "display:flex;align-items:center;justify-content:center;z-index:999999;" +
-      "animation:eb-fade .18s ease-out;padding:16px;}" +
+      "animation:eb-fade .18s ease-out;padding:16px;" +
+      "font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}" +
       "@keyframes eb-fade{from{opacity:0}to{opacity:1}}" +
-      "#eb-exit-modal{position:relative;background:#fff;border-radius:14px;" +
-      "max-width:560px;width:100%;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.3);" +
-      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}" +
-      "#eb-exit-close{position:absolute;top:12px;right:14px;border:none;background:none;" +
-      "font-size:26px;line-height:1;cursor:pointer;color:#64748b;}" +
-      "#eb-exit-close:hover{color:#0f172a;}" +
-      "#eb-exit-headline{margin:0 0 6px;font-size:22px;color:#0f172a;font-weight:700;}" +
-      "#eb-exit-subhead{margin:0 0 20px;font-size:14px;color:#64748b;}" +
-      "#eb-exit-tools{display:flex;flex-direction:column;gap:12px;}" +
-      ".eb-exit-tool{display:block;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;" +
-      "text-decoration:none;transition:border-color .15s,background .15s;}" +
-      ".eb-exit-tool:hover{border-color:#16a34a;background:#f0fdf4;}" +
-      ".eb-exit-tool-name{font-weight:700;color:#0f172a;font-size:15px;margin-bottom:2px;}" +
-      ".eb-exit-tool-desc{font-size:13px;color:#475569;margin-bottom:6px;}" +
-      ".eb-exit-tool-cta{font-size:13px;font-weight:600;color:#16a34a;}" +
-      "@media(max-width:480px){#eb-exit-modal{padding:24px 18px}}";
+      "#eb-exit-modal{position:relative;background:#fff;border-radius:28px;" +
+      "max-width:520px;width:100%;padding:56px 32px 32px;box-shadow:0 20px 60px rgba(34,34,34,.25);}" +
+      "#eb-exit-close{position:absolute;top:16px;right:16px;width:36px;height:36px;padding:0;" +
+      "border:1px solid var(--eb-black-20);border-radius:50%;background:#fff;" +
+      "display:flex;align-items:center;justify-content:center;" +
+      "font-size:18px;line-height:1;cursor:pointer;color:var(--eb-black-50);transition:all .15s;}" +
+      "#eb-exit-close:hover{color:var(--eb-black);border-color:var(--eb-black-50);}" +
+      "#eb-exit-headline{margin:0 0 6px;font-size:24px;color:var(--eb-black);font-weight:700;" +
+      "text-align:center;}" +
+      "#eb-exit-subhead{margin:0 0 28px;font-size:14px;color:var(--eb-black-50);font-weight:400;" +
+      "text-align:center;}" +
+      "#eb-exit-tools{display:flex;flex-direction:column;gap:14px;}" +
+      ".eb-exit-tool{display:flex;align-items:center;gap:16px;" +
+      "border:1px solid var(--eb-black-12);border-radius:16px;padding:14px 18px;" +
+      "text-decoration:none;transition:all .2s;}" +
+      ".eb-exit-tool:hover{border-color:var(--eb-blue);background:var(--eb-blue-5);}" +
+      ".eb-exit-tool-icon{flex:0 0 auto;width:56px;height:56px;border-radius:50%;" +
+      "background:var(--eb-black-5);color:var(--eb-blue);" +
+      "display:flex;align-items:center;justify-content:center;transition:background .2s;}" +
+      ".eb-exit-tool-icon svg{width:26px;height:26px;}" +
+      ".eb-exit-tool:hover .eb-exit-tool-icon{background:var(--eb-blue-10);}" +
+      ".eb-exit-tool-name{font-weight:600;color:var(--eb-black);font-size:16px;}" +
+      "@media(max-width:480px){#eb-exit-modal{padding:48px 20px 24px}}";
     var style = document.createElement("style");
     style.textContent = css;
     document.head.appendChild(style);
@@ -148,6 +179,7 @@
     if (shown || !armed) return;
     shown = true;
     if (CONFIG.debug) console.log("[eb-exit] triggering popup");
+    injectFont();
     injectStyles();
     buildPopup();
     document.removeEventListener("mouseout", onMouseOut);
