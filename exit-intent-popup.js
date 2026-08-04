@@ -6,13 +6,152 @@
  *
  * It detects "exit intent" (mouse moving up toward the browser
  * chrome / address bar) and shows a lightweight popup with 3 CTAs
- * to nurturing tools. No dependencies, no build step.
+ * to nurturing tools. No dependencies, no build step ΓÇö single-CTA
+ * variants lazy-load lottie-web + mascot-celebration.json for a small
+ * celebration animation, but only when that variant is actually shown.
  *
  * CONFIG: edit the values in the CONFIG block below to change
  * links, copy, or behavior.
  */
 (function () {
   "use strict";
+
+  // Captured synchronously so we can read data-* attributes off this exact
+  // <script> tag. Must happen before any other code runs \u2014 currentScript is
+  // only valid during the script's initial (top-level) execution.
+  var scriptEl = document.currentScript;
+
+  // Mascot celebration animation (single-CTA variants only) is fetched from
+  // whatever directory this script itself was loaded from, so it works the
+  // same whether served from jsDelivr, GitHub raw, or a local file.
+  var MASCOT_URL = (scriptEl ? scriptEl.src.replace(/[^/]*$/, "") : "") + "mascot-celebration.json";
+  var LOTTIE_SRC = "https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie_light.min.js";
+
+  var ICONS = {
+    trendingUp:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7">' +
+      '</polyline><polyline points="14 7 21 7 21 14"></polyline></svg>',
+    helpCircle:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle>' +
+      '<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17">' +
+      '</line></svg>',
+    barChart:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line>' +
+      '<line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>',
+    zap:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">' +
+      '</polygon></svg>',
+    activity:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12">' +
+      '</polyline></svg>',
+    arrowRight:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line>' +
+      '<polyline points="12 5 19 12 12 19"></polyline></svg>'
+  };
+
+  // ---------- VARIANTS ----------
+  // Pick one per page by adding data-variant="key" to the <script> tag \u2014
+  // no editing this file needed. Falls back to "all" when omitted.
+  //
+  //   data-variant="xray"    -> Energy X-Ray only
+  //   data-variant="switch"  -> Is Now a Good Time to Switch? only
+  //   data-variant="usage"   -> Pull My Usage only
+  //   data-variant="custom"  -> one-off CTA, see data-cta-name/data-cta-href below
+  //   (omitted)              -> all 3 tools (original behavior)
+  //
+  // Any variant's headline/subhead can be overridden per page too, with
+  // data-headline="..." / data-subhead="..." on the same <script> tag.
+  var VARIANTS = {
+    all: {
+      headline: "Before you go \u2014 don't miss these free tools",
+      subhead: "Takes 30 seconds. No account needed.",
+      tools: [
+        {
+          name: "Rate Tracker",
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/price_tracker/energy-type",
+          icon: ICONS.trendingUp
+        },
+        {
+          name: "Is Now a Good Time to Switch?",
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/market_analysis/energy-type",
+          icon: ICONS.helpCircle
+        },
+        {
+          name: "Compare My Bill to My Neighbors",
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/bill_comparison/energy-type",
+          icon: ICONS.barChart
+        }
+      ]
+    },
+    xray: {
+      headline: "Get your free Energy X-Ray",
+      subhead: "See exactly where your money's going. Takes 30 seconds.",
+      tools: [
+        {
+          name: "Get My Energy X-Ray",
+          // TODO: confirm the real Energy X-Ray tool URL before shipping this variant
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/energy_xray/energy-type",
+          icon: ICONS.zap
+        }
+      ]
+    },
+    switch: {
+      headline: "Is now a good time to switch?",
+      subhead: "Get a personalized market analysis. Takes 30 seconds.",
+      tools: [
+        {
+          name: "Is Now a Good Time to Switch?",
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/market_analysis/energy-type",
+          icon: ICONS.helpCircle
+        }
+      ]
+    },
+    usage: {
+      headline: "See your energy usage history",
+      subhead: "Pull your usage data in 30 seconds. No account needed.",
+      tools: [
+        {
+          name: "Pull My Usage",
+          // TODO: confirm the real usage-history tool URL before shipping this variant
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/usage_history/energy-type",
+          icon: ICONS.activity
+        }
+      ]
+    }
+  };
+
+  function getVariant() {
+    var key = (scriptEl && scriptEl.getAttribute("data-variant")) || "all";
+
+    if (key === "custom") {
+      return {
+        headline: (scriptEl && scriptEl.getAttribute("data-headline")) || VARIANTS.all.headline,
+        subhead: (scriptEl && scriptEl.getAttribute("data-subhead")) || VARIANTS.all.subhead,
+        tools: [
+          {
+            name: (scriptEl && scriptEl.getAttribute("data-cta-name")) || "Learn More",
+            href: (scriptEl && scriptEl.getAttribute("data-cta-href")) || "#",
+            icon: ICONS.arrowRight
+          }
+        ]
+      };
+    }
+
+    var preset = VARIANTS[key] || VARIANTS.all;
+    return {
+      headline: (scriptEl && scriptEl.getAttribute("data-headline")) || preset.headline,
+      subhead: (scriptEl && scriptEl.getAttribute("data-subhead")) || preset.subhead,
+      tools: preset.tools
+    };
+  }
+
+  var variant = getVariant();
 
   // ---------- CONFIG ----------
   var CONFIG = {
@@ -25,35 +164,9 @@
     // Only fire when cursor moves above this Y position (px from top)
     triggerY: 20,
     cookieName: "eb_exit_popup_seen",
-    headline: "Before you go — don't miss these free tools",
-    subhead: "Takes 30 seconds. No account needed.",
-    tools: [
-      {
-        name: "Rate Tracker",
-        href: "https://www.energybot.com/dashboard.html#/dashboard/tools/price_tracker/energy-type",
-        icon:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-          'stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7">' +
-          '</polyline><polyline points="14 7 21 7 21 14"></polyline></svg>'
-      },
-      {
-        name: "Is Now a Good Time to Switch?",
-        href: "https://www.energybot.com/dashboard.html#/dashboard/tools/market_analysis/energy-type",
-        icon:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-          'stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle>' +
-          '<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17">' +
-          '</line></svg>'
-      },
-      {
-        name: "Compare My Bill to My Neighbors",
-        href: "https://www.energybot.com/dashboard.html#/dashboard/tools/bill_comparison/energy-type",
-        icon:
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-          'stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line>' +
-          '<line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>'
-      }
-    ]
+    headline: variant.headline,
+    subhead: variant.subhead,
+    tools: variant.tools
   };
   // ---------- END CONFIG ----------
 
@@ -69,7 +182,7 @@
   }
 
   if (getCookie(CONFIG.cookieName)) {
-    if (CONFIG.debug) console.log("[eb-exit] suppressed — cookie present:", getCookie(CONFIG.cookieName));
+    if (CONFIG.debug) console.log("[eb-exit] suppressed ΓÇö cookie present:", getCookie(CONFIG.cookieName));
     return; // already seen recently
   }
 
@@ -78,8 +191,45 @@
 
   setTimeout(function () {
     armed = true;
-    if (CONFIG.debug) console.log("[eb-exit] armed — will now trigger on exit intent");
+    if (CONFIG.debug) console.log("[eb-exit] armed ΓÇö will now trigger on exit intent");
   }, CONFIG.armDelay);
+
+  function loadScript(src, onload) {
+    var el = document.createElement("script");
+    el.src = src;
+    el.onload = onload;
+    el.onerror = function () {
+      if (CONFIG.debug) console.warn("[eb-exit] failed to load", src);
+    };
+    document.head.appendChild(el);
+  }
+
+  function injectMascot(container) {
+    function render(data) {
+      window.lottie.loadAnimation({
+        container: container,
+        renderer: "svg",
+        loop: false,
+        autoplay: true,
+        animationData: data
+      });
+    }
+
+    function fetchAndRender() {
+      fetch(MASCOT_URL)
+        .then(function (res) { return res.json(); })
+        .then(render)
+        .catch(function (err) {
+          if (CONFIG.debug) console.warn("[eb-exit] mascot animation failed to load", err);
+        });
+    }
+
+    if (window.lottie) {
+      fetchAndRender();
+    } else {
+      loadScript(LOTTIE_SRC, fetchAndRender);
+    }
+  }
 
   function buildPopup() {
     var overlay = document.createElement("div");
@@ -96,15 +246,24 @@
       })
       .join("");
 
+    // The mascot celebration only fits under a single, focused CTA ΓÇö
+    // it'd compete with the list on the "all tools" 3-CTA layout.
+    var showMascot = CONFIG.tools.length === 1;
+
     overlay.innerHTML =
       '<div id="eb-exit-modal" role="dialog" aria-modal="true" aria-labelledby="eb-exit-headline">' +
         '<button id="eb-exit-close" aria-label="Close">&times;</button>' +
         '<h2 id="eb-exit-headline">' + CONFIG.headline + "</h2>" +
         '<p id="eb-exit-subhead">' + CONFIG.subhead + "</p>" +
         '<div id="eb-exit-tools">' + toolsHtml + "</div>" +
+        (showMascot ? '<div id="eb-exit-mascot" aria-hidden="true"></div>' : "") +
       "</div>";
 
     document.body.appendChild(overlay);
+
+    if (showMascot) {
+      injectMascot(overlay.querySelector("#eb-exit-mascot"));
+    }
 
     function close() {
       overlay.remove();
@@ -169,6 +328,8 @@
       ".eb-exit-tool-icon svg{width:26px;height:26px;}" +
       ".eb-exit-tool:hover .eb-exit-tool-icon{background:var(--eb-blue-10);}" +
       ".eb-exit-tool-name{font-weight:600;color:var(--eb-black);font-size:16px;}" +
+      "#eb-exit-mascot{width:150px;height:187px;margin:8px auto 0;}" +
+      "#eb-exit-mascot svg{width:100%;height:100%;display:block;}" +
       "@media(max-width:480px){#eb-exit-modal{padding:48px 20px 24px}}";
     var style = document.createElement("style");
     style.textContent = css;
