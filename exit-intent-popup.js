@@ -95,8 +95,7 @@
       tools: [
         {
           name: "Get My Energy X-Ray",
-          // TODO: confirm the real Energy X-Ray tool URL before shipping this variant
-          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/energy_xray/energy-type",
+          href: "https://www.energybot.com/energy-x-ray.html",
           icon: ICONS.zap
         }
       ]
