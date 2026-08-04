@@ -118,7 +118,7 @@
         {
           name: "Pull My Usage",
           // TODO: confirm the real usage-history tool URL before shipping this variant
-          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/usage_history/energy-type",
+          href: "https://www.energybot.com/dashboard.html#/dashboard/tools/usage/energy-type",
           icon: ICONS.activity
         }
       ]
