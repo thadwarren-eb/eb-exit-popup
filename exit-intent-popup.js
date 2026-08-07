@@ -393,7 +393,7 @@
       ".eb-exit-tool-icon svg{width:26px;height:26px;}" +
       ".eb-exit-tool:hover .eb-exit-tool-icon{background:var(--eb-blue-10);}" +
       ".eb-exit-tool-name{font-weight:600;color:var(--eb-black);font-size:16px;}" +
-      "#eb-exit-mascot{width:220px;height:275px;margin:8px auto 0;}" +
+      "#eb-exit-mascot{width:150px;height:187px;margin:8px auto 0;}" +
       "#eb-exit-mascot svg{width:100%;height:100%;display:block;}" +
       "@media(max-width:480px){#eb-exit-modal{padding:48px 20px 24px}}";
     var style = document.createElement("style");
