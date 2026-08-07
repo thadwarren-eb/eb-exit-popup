@@ -18,13 +18,35 @@
 
   // Captured synchronously so we can read data-* attributes off this exact
   // <script> tag. Must happen before any other code runs \u2014 currentScript is
-  // only valid during the script's initial (top-level) execution.
+  // only valid during the script's initial (top-level) execution. It's also
+  // NULL when this script is injected by Google Tag Manager's Custom HTML
+  // tag (and some other tag managers) \u2014 they parse the HTML and recreate
+  // the <script> element programmatically to force execution, which loses
+  // this. For GTM, use the window.EB_EXIT_POPUP_CONFIG global instead (see
+  // OPTS/readOpt below) \u2014 set it in its own inline <script> ahead of this
+  // one, inside the same Custom HTML tag.
   var scriptEl = document.currentScript;
+
+  // Config source for tag-manager setups where currentScript isn't available.
+  // Example, inside one GTM Custom HTML tag:
+  //   <script>window.EB_EXIT_POPUP_CONFIG = { variant: "usage" };</script>
+  //   <script src="https://cdn.jsdelivr.net/gh/thadwarren-eb/eb-exit-popup/exit-intent-popup.js"></script>
+  // When both a global config value and a data-* attribute are present, the
+  // global config wins.
+  var OPTS = window.EB_EXIT_POPUP_CONFIG || {};
+
+  function readOpt(globalKey, dataAttr) {
+    if (OPTS[globalKey] != null) return OPTS[globalKey];
+    return scriptEl ? scriptEl.getAttribute("data-" + dataAttr) : null;
+  }
 
   // Mascot celebration animation (single-CTA variants only) is fetched from
   // whatever directory this script itself was loaded from, so it works the
-  // same whether served from jsDelivr, GitHub raw, or a local file.
-  var MASCOT_URL = (scriptEl ? scriptEl.src.replace(/[^/]*$/, "") : "") + "mascot-celebration.json";
+  // same whether served from jsDelivr, GitHub raw, or a local file. Falls
+  // back to the jsDelivr location when scriptEl is unavailable (GTM).
+  var MASCOT_URL =
+    (scriptEl ? scriptEl.src.replace(/[^/]*$/, "") : "https://cdn.jsdelivr.net/gh/thadwarren-eb/eb-exit-popup/") +
+    "mascot-celebration.json";
   var LOTTIE_SRC = "https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie_light.min.js";
 
   var ICONS = {
@@ -125,17 +147,17 @@
   };
 
   function getVariant() {
-    var key = (scriptEl && scriptEl.getAttribute("data-variant")) || "all";
+    var key = readOpt("variant", "variant") || "all";
 
     if (key === "custom") {
       return {
         key: key,
-        headline: (scriptEl && scriptEl.getAttribute("data-headline")) || VARIANTS.all.headline,
-        subhead: (scriptEl && scriptEl.getAttribute("data-subhead")) || VARIANTS.all.subhead,
+        headline: readOpt("headline", "headline") || VARIANTS.all.headline,
+        subhead: readOpt("subhead", "subhead") || VARIANTS.all.subhead,
         tools: [
           {
-            name: (scriptEl && scriptEl.getAttribute("data-cta-name")) || "Learn More",
-            href: (scriptEl && scriptEl.getAttribute("data-cta-href")) || "#",
+            name: readOpt("ctaName", "cta-name") || "Learn More",
+            href: readOpt("ctaHref", "cta-href") || "#",
             icon: ICONS.arrowRight
           }
         ]
@@ -145,8 +167,8 @@
     var preset = VARIANTS[key] || VARIANTS.all;
     return {
       key: VARIANTS[key] ? key : "all",
-      headline: (scriptEl && scriptEl.getAttribute("data-headline")) || preset.headline,
-      subhead: (scriptEl && scriptEl.getAttribute("data-subhead")) || preset.subhead,
+      headline: readOpt("headline", "headline") || preset.headline,
+      subhead: readOpt("subhead", "subhead") || preset.subhead,
       tools: preset.tools
     };
   }
@@ -175,10 +197,10 @@
   // Fires as a proper analytics event — never as a URL/UTM parameter, since
   // UTMs on a same-site link can make GA4 (and most other tools) start a
   // brand-new session and overwrite the visitor's real acquisition source.
-  // Works with GA4 (gtag.js), GTM (dataLayer), or neither — and always
-  // dispatches a DOM CustomEvent too, so any other analytics setup (Segment,
-  // Mixpanel, a custom GTM trigger, etc.) can listen for
-  // "eb-exit-popup:<name>" without this file needing to know about it.
+  // Works with GA4 (gtag.js), GTM (dataLayer), PostHog, or none of them —
+  // and always dispatches a DOM CustomEvent too, so any other analytics
+  // setup (Segment, Mixpanel, a custom GTM trigger, etc.) can listen for
+  // "eb-marketing-exit-popup:<name>" without this file needing to know about it.
   function trackEvent(name, params) {
     var payload = Object.assign({ variant: CONFIG.variantKey }, params);
     try {
@@ -188,7 +210,10 @@
       if (window.dataLayer && typeof window.dataLayer.push === "function") {
         window.dataLayer.push(Object.assign({ event: name }, payload));
       }
-      document.dispatchEvent(new CustomEvent("eb-exit-popup:" + name, { detail: payload }));
+      if (window.posthog && typeof window.posthog.capture === "function") {
+        window.posthog.capture(name, payload);
+      }
+      document.dispatchEvent(new CustomEvent("eb-marketing-exit-popup:" + name, { detail: payload }));
       if (CONFIG.debug) console.log("[eb-exit] tracked", name, payload);
     } catch (e) {
       if (CONFIG.debug) console.warn("[eb-exit] tracking failed", e);
