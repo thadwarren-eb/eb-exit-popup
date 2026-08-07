@@ -368,7 +368,7 @@
       "}" +
       "#eb-exit-overlay{position:fixed;inset:0;background:rgba(34,34,34,.6);" +
       "display:flex;align-items:center;justify-content:center;z-index:999999;" +
-      "animation:eb-fade .18s ease-out;padding:16px;" +
+      "animation:eb-fade .18s ease-out;padding:16px;overflow-y:auto;" +
       "font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}" +
       "@keyframes eb-fade{from{opacity:0}to{opacity:1}}" +
       "#eb-exit-modal{position:relative;background:#fff;border-radius:28px;" +
@@ -393,7 +393,7 @@
       ".eb-exit-tool-icon svg{width:26px;height:26px;}" +
       ".eb-exit-tool:hover .eb-exit-tool-icon{background:var(--eb-blue-10);}" +
       ".eb-exit-tool-name{font-weight:600;color:var(--eb-black);font-size:16px;}" +
-      "#eb-exit-mascot{width:150px;height:187px;margin:8px auto 0;}" +
+      "#eb-exit-mascot{width:220px;height:275px;margin:8px auto 0;}" +
       "#eb-exit-mascot svg{width:100%;height:100%;display:block;}" +
       "@media(max-width:480px){#eb-exit-modal{padding:48px 20px 24px}}";
     var style = document.createElement("style");
